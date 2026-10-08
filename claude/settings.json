@@ -1,0 +1,224 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Grep",
+      "Glob",
+      "Bash(ls *)",
+      "Bash(jq *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch *)",
+      "Bash(git show *)",
+      "Bash(git fetch *)",
+      "Bash(git switch *)",
+      "Bash(git restore *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git stash *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(git rm *)",
+      "Bash(git mv *)",
+      "Bash(git pull *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr diff *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr status *)",
+      "Bash(gh pr review * --comment*)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr comment *)",
+      "Bash(gh pr ready *)",
+      "Bash(gh pr close *)",
+      "Bash(gh pr edit *)",
+      "Bash(gh issue list *)",
+      "Bash(gh issue view *)",
+      "Bash(gh issue comment *)",
+      "Bash(gh issue close *)",
+      "Bash(gh issue create *)",
+      "Bash(gh issue edit *)",
+      "Bash(gh repo view *)",
+      "Bash(gh api *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)",
+      "Bash(git push)",
+      "Bash(git push origin *)",
+      "Bash(git push -u origin *)",
+      "Bash(git worktree list*)",
+      "Bash(git worktree remove *)",
+      "Bash(git worktree prune*)",
+      "Bash(mkdir -p *)",
+      "Bash(gzip *)",
+      "Bash(wc *)",
+      "Bash(mv *)",
+      "Bash(cp *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(rg *)",
+      "EnterWorktree",
+      "ExitWorktree",
+      "Skill(pr-review-toolkit:review-pr)",
+      "mcp__ide__getDiagnostics",
+      "LSP"
+    ],
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Grep(**/.env)",
+      "Grep(**/.env.*)",
+      "Bash(cat *.env*)",
+      "Bash(cat .env*)",
+      "Bash(* > .env*)",
+      "Bash(* > *.env*)",
+      "Bash(* >> .env*)",
+      "Bash(* >> *.env*)"
+    ],
+    "ask": [
+      "Bash(git worktree remove --force*)",
+      "Bash(git worktree remove * --force*)",
+      "Bash(git branch -D *)",
+      "Bash(git branch --delete --force*)",
+      "Bash(git checkout *)",
+      "Bash(dangerouslyDisableSandbox:true)",
+      "Bash(docker *)"
+    ],
+    "defaultMode": "auto"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/hooks/block-dotenv.sh"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $HOME/.claude/hooks/post-compact.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' '権限確認を待っています' --urgency=normal 2>/dev/null || true"
+          }
+        ]
+      },
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "notify-send 'Claude Code' '入力待ちです' --urgency=low 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash $HOME/.claude/statusline-command.sh"
+  },
+  "enabledPlugins": {
+    "pr-review-toolkit@claude-plugins-official": true,
+    "dev-workflow@claude-shared-skills": true,
+    "superpowers@claude-plugins-official": true,
+    "github@claude-plugins-official": false
+  },
+  "extraKnownMarketplaces": {
+    "claude-shared-skills": {
+      "source": {
+        "source": "github",
+        "repo": "kuchita-el/claude-shared-skills"
+      }
+    },
+    "claude-plugins-official": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/claude-plugins-official"
+      }
+    }
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "api.github.com",
+        "*.githubusercontent.com",
+        "codeload.github.com"
+      ]
+    },
+    "credentials": {
+      "files": [
+        {
+          "path": "~/.ssh",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.aws",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.azure",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.docker/config.json",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.claude/.credentials.json",
+          "mode": "deny"
+        }
+      ]
+    },
+    "excludedCommands": [
+      "git commit *",
+      "git merge *",
+      "git rebase *",
+      "git cherry-pick *",
+      "git revert *",
+      "git tag *",
+      "git push",
+      "git push *",
+      "git pull",
+      "git pull *",
+      "git fetch",
+      "git fetch *",
+      "git ls-remote *",
+      "git clone *",
+      "docker *"
+    ]
+  },
+  "theme": "dark",
+  "autoMode": {
+    "environment": [
+      "$defaults"
+    ]
+  }
+}
