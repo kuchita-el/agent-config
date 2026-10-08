@@ -1,10 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-DOTFILES_DIR="$(cd "$(dirname "$0")" && pwd)"
-CLAUDE_SRC="$DOTFILES_DIR"
+CLAUDE_SRC="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_DEST="$HOME/.claude"
-BACKUP_DIR="$CLAUDE_DEST/backups/dotfiles"
+BACKUP_DIR="$CLAUDE_DEST/backups/agent-config"
 
 FILES=("settings.json" "statusline-command.sh" "CLAUDE.md")
 
@@ -23,7 +22,7 @@ detect_platform() {
 
 platform=$(detect_platform)
 echo "プラットフォーム: $platform"
-echo "dotfilesディレクトリ: $DOTFILES_DIR"
+echo "出典ディレクトリ: $CLAUDE_SRC"
 echo ""
 
 # ~/.claude/ の存在確認・作成
@@ -195,12 +194,12 @@ if [ "$platform" != "macOS" ]; then
     sandbox_ok=1
 
     if ! command -v bwrap &>/dev/null; then
-        echo "[警告] bwrap が見つかりません。サンドボックスが起動できません（wsl/install.sh で導入）"
+        echo "[警告] bwrap が見つかりません。サンドボックスが起動できません（Debian/Ubuntu では apt の bubblewrap で導入）"
         sandbox_ok=0
     fi
 
     if ! command -v socat &>/dev/null; then
-        echo "[警告] socat が見つかりません。サンドボックスが起動できません（wsl/install.sh で導入）"
+        echo "[警告] socat が見つかりません。サンドボックスが起動できません（Debian/Ubuntu では apt の socat で導入）"
         sandbox_ok=0
     fi
 
