@@ -182,17 +182,27 @@ check "リポジトリ側に端末状態があれば失敗する" \
     bash -c '! CODEX_HOME="$1" PATH="$2" bash "$3/install.sh" >/dev/null 2>&1' _ "$H8" "$SAFE_PATH" "$BAD_REPO"
 check "リポジトリ側に端末状態があるときは既存のファイルを保つ" cmp -s "$H8/config.toml" <(printf '%s\n' "$LIVE_CONFIG")
 
-TUI_REPO="$TEST_ROOT/tui-repo"
-make_repo "$TUI_REPO" "$REPO_CONFIG
+# 端末状態の表ごとに、新しい端末（既存のファイルが無い）で拒否されることを確かめる。
+# 既存のファイルに同じ表があると、拒否が無くても表の重複で TOML の検証が失敗し、区別できないため。
+# <名前> <リポジトリ側に足す表>
+check_rejects_state() {
+    local name=$1 repo="$TEST_ROOT/bad-repo-$1" home="$TEST_ROOT/case8-$1/.codex"
+    make_repo "$repo" "$REPO_CONFIG
 
-[tui]
-screen_reader_detection_done = true"
-H8T="$TEST_ROOT/case8-tui/.codex"
-mkdir -p "$H8T"
-printf '%s\n' "$LIVE_CONFIG" > "$H8T/config.toml"
-check "リポジトリ側に画面の状態の表があれば失敗する" \
-    bash -c '! CODEX_HOME="$1" PATH="$2" bash "$3/install.sh" >/dev/null 2>&1' _ "$H8T" "$SAFE_PATH" "$TUI_REPO"
-check "リポジトリ側に画面の状態の表があるときは既存のファイルを保つ" cmp -s "$H8T/config.toml" <(printf '%s\n' "$LIVE_CONFIG")
+$2"
+    check "リポジトリ側に $name の表があれば失敗する" \
+        bash -c '! CODEX_HOME="$1" PATH="$2" bash "$3/install.sh" >/dev/null 2>"$4"' _ "$home" "$SAFE_PATH" "$repo" "$TEST_ROOT/case8-$name.err"
+    check "リポジトリ側に $name の表があるときは、端末状態の表として拒否する" grep -q '端末状態の表' "$TEST_ROOT/case8-$name.err"
+    check "リポジトリ側に $name の表があるときは config.toml を書き出さない" test ! -e "$home/config.toml"
+}
+check_rejects_state projects '[projects."/work/leak"]
+trust_level = "trusted"'
+check_rejects_state hooks.state '[hooks.state."dev-workflow@claude-shared-skills:hooks/hooks.json:session_start:0:0"]
+trusted_hash = "sha256:abc"'
+check_rejects_state tui '[tui]
+screen_reader_detection_done = true'
+check_rejects_state tui-sub '[tui.model_availability_nux]
+"gpt-new" = 1'
 
 # 9. 実際の codex/config.toml が、公開してよい内容である
 REAL="$SCRIPT_DIR/config.toml"
