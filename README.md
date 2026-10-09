@@ -11,7 +11,7 @@ claude/
   settings.json          権限、フック、サンドボックス、プラグインの宣言
   CLAUDE.md              全プロジェクト共通の作業ルール（ユーザースコープ）
   statusline-command.sh  ステータスライン
-  hooks/                 フック（dotenv への参照の遮断、ツール呼び出しの記録、圧縮後の動的な文脈の再注入）
+  hooks/                 フック（dotenv への参照の遮断、圧縮後の動的な文脈の再注入）
   agents/                サブエージェントの定義
   install.sh             ~/.claude/ への配置（git のグローバルな除外設定への追記を含む）
   test-install.sh        install.sh のテスト
