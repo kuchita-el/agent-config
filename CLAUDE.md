@@ -18,6 +18,7 @@ Claude Code と Codex の個人設定を置く公開リポジトリ。所有者�
 Claude Code の設定ファイルを `~/.claude/` にシンボリックリンクで配置する。
 
 - 冪等に動作（何度実行しても安全）
+- `~/.claude/` の外では、git のグローバルな除外設定（`~/.config/git/ignore`）に `**/.claude/settings.local.json` を足す。各プロジェクトの `settings.local.json` をコミットしないため
 - 既存ファイルは `~/.claude/backups/agent-config/` にタイムスタンプ付きで退避
 
 ```bash
@@ -30,7 +31,7 @@ bash claude/install.sh
 
 - Codex は trust やフックの承認、画面の表示状態（端末状態）を、設定と同じファイルへ書き込む。リポジトリの内容を土台に、既存の `~/.codex/config.toml` から端末状態の表（`[projects.*]`、`[hooks.state]` とその下の表、`[tui]` とその下の表）だけを持ち越し、それ以外はリポジトリの内容で上書きする
 - 管理部分が変わる場合は差分を表示し、`~/.codex/backups/agent-config/` に退避してから書き出す
-- 統合の後、`codex/config.toml` に宣言した Git のマーケットプレイスを `codex plugin marketplace upgrade` で取得する。有効にしたプラグインのキャッシュもこれで作られる。取得に失敗しても配置は成功とし、警告を出す
+- 統合の後、`codex/config.toml` に宣言した Git のマーケットプレイスを `codex plugin marketplace upgrade` で取得する。そのマーケットプレイスの、有効にしたプラグインのキャッシュもこれで作られる。Git のマーケットプレイスの外にあるプラグイン（`superpowers@openai-curated` など）は取得しないため、手作業で導入する。取得に失敗しても配置は成功とし、警告を出す
 - `codex/config.toml` を変えたら、pull の後に `bash codex/install.sh` を再実行する。pull だけでは反映されない
 - Codex の画面操作で管理部分を変えても、リポジトリへは戻らず、次の配置で上書きされる。設定の変更はこのリポジトリで行う
 
