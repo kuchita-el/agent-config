@@ -203,6 +203,37 @@ check "実際の config.toml に実行時のキーが無い" bash -c '! grep -Eq
 check "実際の config.toml は TOML として読める" \
     python3 -I -c 'import sys, tomllib; tomllib.load(open(sys.argv[1], "rb"))' "$REAL"
 
+# 10. マーケットプレイスの取得（codex CLI は、受け取った引数を記録するだけの仮のものに差し替える）
+STUB_DIR="$TEST_ROOT/stub"
+mkdir -p "$STUB_DIR"
+printf '%s\n' '#!/bin/bash' 'printf "%s\n" "$*" >> "$CODEX_STUB_LOG"' 'exit "${CODEX_STUB_EXIT:-0}"' > "$STUB_DIR/codex"
+chmod +x "$STUB_DIR/codex"
+H10="$TEST_ROOT/case10/.codex"
+CODEX_STUB_LOG="$TEST_ROOT/stub.log" CODEX_HOME="$H10" PATH="$STUB_DIR:$SAFE_PATH" bash "$REPO/install.sh" > /dev/null
+check "Git のマーケットプレイスを取得する" grep -Fqx 'plugin marketplace upgrade claude-shared-skills' "$TEST_ROOT/stub.log"
+check "宣言済みのマーケットプレイスを登録し直さない" bash -c '! grep -q "^plugin marketplace add" "$1"' _ "$TEST_ROOT/stub.log"
+check "プラグインを個別に導入しない（取得で足りる）" bash -c '! grep -q "^plugin add" "$1"' _ "$TEST_ROOT/stub.log"
+check "マーケットプレイスの取得では config.toml の管理部分が変わらない" grep -Fqx 'model = "gpt-new"' "$H10/config.toml"
+
+# 11. ローカル参照のマーケットプレイスは取得しない
+LOCAL_REPO="$TEST_ROOT/local-repo"
+make_repo "$LOCAL_REPO" 'model = "gpt-new"
+
+[marketplaces.dev-local]
+source_type = "local"
+source = "../dev-local"'
+H11="$TEST_ROOT/case11/.codex"
+CODEX_STUB_LOG="$TEST_ROOT/stub11.log" CODEX_HOME="$H11" PATH="$STUB_DIR:$SAFE_PATH" bash "$LOCAL_REPO/install.sh" > /dev/null
+check "ローカル参照のマーケットプレイスは取得しない" bash -c '! grep -q "upgrade" "$1" 2>/dev/null' _ "$TEST_ROOT/stub11.log"
+
+# 12. 取得に失敗しても、配置は成功とし、警告を出す
+H12="$TEST_ROOT/case12/.codex"
+check "取得に失敗しても配置は成功する" \
+    bash -c 'CODEX_STUB_EXIT=1 CODEX_STUB_LOG="$1" CODEX_HOME="$2" PATH="$3" bash "$4/install.sh" > "$5"' \
+    _ "$TEST_ROOT/stub12.log" "$H12" "$STUB_DIR:$SAFE_PATH" "$REPO" "$TEST_ROOT/case12.log"
+check "取得に失敗したら警告する" grep -q '^\[警告\].*claude-shared-skills' "$TEST_ROOT/case12.log"
+check "取得に失敗しても config.toml は配置される" cmp -s "$H12/config.toml" "$REPO/config.toml"
+
 if [ "$failures" -gt 0 ]; then
     printf '%d 件失敗\n' "$failures"
     exit 1

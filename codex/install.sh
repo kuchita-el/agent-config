@@ -27,6 +27,18 @@ normalize_managed() {
     split_toml managed | grep -v -E -e '^[[:space:]]*$' -e '^last_updated[[:space:]]*=' || true
 }
 
+# 標準入力の TOML から、Git のマーケットプレイスの「名前<TAB>参照先」を出す（source_type が local のものは除く）
+list_git_marketplaces() {
+    awk '
+        function flush() { if (name != "" && src != "" && !is_local) print name "\t" src }
+        /^\[/ { flush(); name = ""; src = ""; is_local = 0 }
+        /^\[marketplaces\.[^]]*\]/ { name = $0; sub(/^\[marketplaces\./, "", name); sub(/\].*$/, "", name) }
+        name != "" && /^source_type[[:space:]]*=/ && /"local"/ { is_local = 1 }
+        name != "" && /^source[[:space:]]*=/ { src = $0; sub(/^source[[:space:]]*=[[:space:]]*"/, "", src); sub(/".*$/, "", src) }
+        END { flush() }
+    '
+}
+
 if [ ! -f "$CODEX_SRC" ]; then
     echo "[エラー] ソースファイルが見つかりません: $CODEX_SRC" >&2
     exit 1
@@ -88,4 +100,19 @@ else
     printf '%s\n' "$merged" > "$tmp"
     mv -f "$tmp" "$CODEX_DEST"
     echo "[作成] $CODEX_DEST（リポジトリの内容に端末状態を統合）"
+fi
+
+# マーケットプレイスの取得
+# Git のマーケットプレイスは、config.toml に宣言しただけでは取得されない。upgrade で取得すると、
+# 有効にしたプラグインのキャッシュまで作られるため、plugin add は要らない。config.toml の管理部分は変わらない。
+echo ""
+echo "=== マーケットプレイス ==="
+if ! command -v codex &>/dev/null; then
+    echo "[スキップ] codex CLIが見つかりません"
+else
+    while IFS=$'\t' read -r mp_name _; do
+        if ! codex plugin marketplace upgrade "$mp_name"; then
+            echo "[警告] マーケットプレイス $mp_name を取得できませんでした。codex plugin marketplace upgrade $mp_name を再実行してください"
+        fi
+    done < <(list_git_marketplaces < "$CODEX_SRC")
 fi
