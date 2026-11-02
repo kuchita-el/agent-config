@@ -87,6 +87,7 @@
 
 - 再帰grepは `command grep -rn` を使う。シェルスナップショットで `grep` が ugrep へ差し替わっていると、gitignore 対象のファイルを黙って飛ばし、0件・exit 0 を返す
 - GitHub上のPRの内容を取るときは `FETCH_HEAD` を使わない。別プロセスの fetch で書き換わるため、`git fetch origin pull/<N>/head:refs/review/pr<N>` で専用refへ取得して照合する
+- サンドボックス内の `git status` に出る、作業で触れていない未追跡のドットファイル（`.bashrc`・`.gitconfig`・`.mcp.json`・`.env` 等）や変更扱いの `.env.example` は、サンドボックスの拒否設定による見かけ上の変化で、作業の変更ではない。調べない。同じ理由で `git diff --stat` が `cannot hash` で失敗したら、確かめたいパスを指定して絞る
 
 ## 検証
 
