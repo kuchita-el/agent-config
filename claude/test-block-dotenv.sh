@@ -66,10 +66,50 @@ check 0 "AC5 Edit old_string のみ" Edit "$(ti --arg s "see $DOT here" '{file_p
 check 0 "NotebookEdit new_source のみ" NotebookEdit "$(ti --arg s "open('$DOT')" '{notebook_path: "/work/a.ipynb", new_source: $s}')"
 check 0 "MultiEdit edits の本文のみ" MultiEdit "$(ti --arg s "cat $DOT" '{file_path: "/work/a.md", edits: [{old_string: $s, new_string: "x"}, {old_string: "y", new_string: $s}]}')"
 
+# ファイル操作でない文章の項目（説明文・依頼文・報告文・問い）にだけ dotenv の表記を含む → 通過
+check 0 "Bash description のみ" Bash "$(ti --arg d "Check $DOT presence" '{command: "docker ps", description: $d}')"
+check 0 "Monitor description のみ" Monitor "$(ti --arg d "watch $DOT" '{command: "tail -f log", description: $d}')"
+check 0 "Agent prompt・description のみ" Agent "$(ti --arg p "do not read $DOT" '{prompt: $p, description: $p, subagent_type: "research"}')"
+check 0 "SubagentHandback message のみ" SubagentHandback "$(ti --arg m "git status shows M $DOT.example" '{message: $m}')"
+check 0 "SendMessage message・summary のみ" SendMessage "$(ti --arg m "about $DOT" '{to: "x", message: $m, summary: $m}')"
+check 0 "AskUserQuestion questions のみ" AskUserQuestion "$(ti --arg q "Allow $DOT.example?" '{questions: [{question: $q, header: "h", options: [{label: $q, description: $q}], multiSelect: false}]}')"
+check 0 "WebFetch prompt のみ" WebFetch "$(ti --arg p "how to load $DOT" '{url: "https://example.com/docs", prompt: $p}')"
+check 0 "WebSearch query のみ" WebSearch "$(ti --arg q "$DOT.example best practice" '{query: $q, mode: "standard"}')"
+check 0 "ScheduleWakeup reason・prompt のみ" ScheduleWakeup "$(ti --arg r "recheck $DOT" '{delaySeconds: 60, reason: $r, prompt: $r, noop: true}')"
+check 0 "ExitPlanMode plan のみ" ExitPlanMode "$(ti --arg p "1. add $DOT to denyRead" '{plan: $p, planFilePath: "/work/plans/p.md"}')"
+check 0 "update_plan items のみ" mcp__ccd_turn__update_plan "$(ti --arg c "check $DOT.example" '{items: [{content: $c, status: "in_progress"}], scope: "first_task"}')"
+check 0 "wrap_up recap・ask・actions のみ" mcp__ccd_turn__wrap_up "$(ti --arg r "$DOT stays denied" '{recap: $r, ask: $r, actions: [{label: $r}]}')"
+check 0 "spawn_task prompt・tldr・title のみ" mcp__ccd_session__spawn_task "$(ti --arg p "stop reading $DOT" '{prompt: $p, tldr: $p, title: $p}')"
+
+# 文章の項目を除くのは項目単位。同じツールの他の項目は引き続き検査する
+check 2 "Bash command は description と併存しても検査" Bash "$(ti --arg c "cat $DOT" '{command: $c, description: "show file"}')"
+check 2 "Monitor command" Monitor "$(ti --arg c "tail -f $DOT" '{command: $c, description: "watch"}')"
+check 2 "WebFetch url" WebFetch "$(ti --arg u "https://example.com/$DOT" '{url: $u, prompt: "x"}')"
+check 2 "ExitPlanMode planFilePath" ExitPlanMode "$(ti --arg f "/work/$DOT" '{plan: "x", planFilePath: $f}')"
+check 2 "spawn_task cwd" mcp__ccd_session__spawn_task "$(ti --arg c "/work/$DOT" '{prompt: "x", tldr: "x", title: "x", cwd: $c}')"
+
+# ブロック時の文言: 検出した名前と、代わりの経路を取らない旨・見かけ上の変更の説明を返す
+# 検出した名前は「検出: 」の部分の形で照合する。固定の文言にも同じ名前が現れるため、
+# 名前だけで照合すると、抜き出しが空でも通ってしまう。
+msg=$(printf '%s' "$(jq -cn --arg c "git diff $DOT.example $DOT" '{session_id: "test", tool_name: "Bash", tool_input: {command: $c}}')" \
+    | bash "$HOOK" 2>&1 >/dev/null || true)
+for want in "（検出: $DOT $DOT.example）" "ユーザーに尋ねる" "サンドボックス"; do
+    if [[ "$msg" == *"$want"* ]]; then
+        printf 'ok   ブロック時の文言に「%s」を含む\n' "$want"
+    else
+        printf 'FAIL ブロック時の文言に「%s」が無い\n' "$want"
+        failures=$((failures + 1))
+    fi
+done
+
 # AC6: 上記以外のツールは任意の引数を検査する（現行の挙動を維持）
 check 2 "AC6 MCP path 引数" mcp__fs__read "$(ti --arg p "/work/$DOT" '{path: $p}')"
 check 2 "AC6 MCP content 引数 (本文除外はツール限定)" mcp__fs__write "$(ti --arg c "cat $DOT" '{target: "/work/a.md", content: $c}')"
 check 2 "AC6 MCP 入れ子の引数" mcp__x__y "$(ti --arg p "$DOT" '{opts: {files: [$p]}}')"
+# 文章の項目として除いた項目名も、他のツールでは検査する。項目名だけの一律除外への退行を検出するため、項目ごとに確かめる
+for field in description prompt message summary questions query reason plan items recap ask actions tldr title; do
+    check 2 "AC6 MCP $field 引数 (文章の項目の除外はツール限定)" mcp__x__y "$(ti --arg f "$field" --arg v "cat $DOT" '{($f): $v}')"
+done
 
 # AC7: 語の延長はどのツール・どの項目でも通過（現行の挙動を維持）
 EXT="${DOT}oy.json"
