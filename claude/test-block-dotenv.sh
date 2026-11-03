@@ -83,9 +83,11 @@ check 2 "Monitor command" Monitor "$(ti --arg c "tail -f $DOT" '{command: $c, de
 check 2 "WebFetch url" WebFetch "$(ti --arg u "https://example.com/$DOT" '{url: $u, prompt: "x"}')"
 
 # ブロック時の文言: 検出した名前と、代わりの経路を取らない旨・見かけ上の変更の説明を返す
-msg=$(printf '%s' "$(jq -cn --arg c "git diff $DOT.example" '{session_id: "test", tool_name: "Bash", tool_input: {command: $c}}')" \
+# 検出した名前は「検出: 」の部分の形で照合する。固定の文言にも同じ名前が現れるため、
+# 名前だけで照合すると、抜き出しが空でも通ってしまう。
+msg=$(printf '%s' "$(jq -cn --arg c "git diff $DOT.example $DOT" '{session_id: "test", tool_name: "Bash", tool_input: {command: $c}}')" \
     | bash "$HOOK" 2>&1 >/dev/null || true)
-for want in "$DOT.example" "ユーザーに尋ねる" "サンドボックス"; do
+for want in "（検出: $DOT $DOT.example）" "ユーザーに尋ねる" "サンドボックス"; do
     if [[ "$msg" == *"$want"* ]]; then
         printf 'ok   ブロック時の文言に「%s」を含む\n' "$want"
     else
@@ -98,6 +100,10 @@ done
 check 2 "AC6 MCP path 引数" mcp__fs__read "$(ti --arg p "/work/$DOT" '{path: $p}')"
 check 2 "AC6 MCP content 引数 (本文除外はツール限定)" mcp__fs__write "$(ti --arg c "cat $DOT" '{target: "/work/a.md", content: $c}')"
 check 2 "AC6 MCP 入れ子の引数" mcp__x__y "$(ti --arg p "$DOT" '{opts: {files: [$p]}}')"
+# 文章の項目として除いた項目名も、他のツールでは検査する。項目名だけの一律除外への退行を検出するため、項目ごとに確かめる
+for field in description prompt message summary questions query reason; do
+    check 2 "AC6 MCP $field 引数 (文章の項目の除外はツール限定)" mcp__x__y "$(ti --arg f "$field" --arg v "cat $DOT" '{($f): $v}')"
+done
 
 # AC7: 語の延長はどのツール・どの項目でも通過（現行の挙動を維持）
 EXT="${DOT}oy.json"
