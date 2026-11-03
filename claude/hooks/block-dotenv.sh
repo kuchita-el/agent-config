@@ -29,26 +29,31 @@ input=$(cat)
 # 書き込み（ドキュメント・設定例）を誤ってブロックしないため。書き込み先の
 # パス項目は除かないので、dotenv 自体への書き込みは引き続きブロックされる。
 # 同じ理由で、ファイル操作に使われない文章の項目（コマンドの説明文、サブエージェント
-# への依頼文と報告文、ユーザーへの問い、検索語等）も検査から除く。ファイル名に
-# 触れるだけの文章でのブロックが、誤検知の大半を占めていたため。実際の読み書きは、
-# 依頼を受けたサブエージェント自身のツール呼び出しで検査される。
+# や別セッションへの依頼文と報告文、ユーザーへの問いと報告、作業計画、検索語等）も
+# 検査から除く。ファイル名に触れるだけの文章でのブロックが、誤検知の大半を占めていた
+# ため。実際の読み書きは、依頼を受けた側自身のツール呼び出しで検査される。
+# ExitPlanMode の計画ファイルのパス（planFilePath）は文章ではないので除かない。
 # 除外はツール名と組にして行う。項目名だけで一律に除くと、MCP ツール等の
 # 同名の引数まで検査から漏れる。未知のツールは全文字列を検査する。
 matched=$(printf '%s' "$input" \
     | jq -r '
-        if   .tool_name == "Write"            then del(.tool_input.content)
-        elif .tool_name == "Edit"             then del(.tool_input.old_string, .tool_input.new_string)
-        elif .tool_name == "MultiEdit"        then del(.tool_input.edits[]?.old_string, .tool_input.edits[]?.new_string)
-        elif .tool_name == "NotebookEdit"     then del(.tool_input.new_source)
-        elif .tool_name == "Bash"             then del(.tool_input.description)
-        elif .tool_name == "Monitor"          then del(.tool_input.description)
-        elif .tool_name == "Agent"            then del(.tool_input.prompt, .tool_input.description)
-        elif .tool_name == "SubagentHandback" then del(.tool_input.message)
-        elif .tool_name == "SendMessage"      then del(.tool_input.message, .tool_input.summary)
-        elif .tool_name == "AskUserQuestion"  then del(.tool_input.questions)
-        elif .tool_name == "WebFetch"         then del(.tool_input.prompt)
-        elif .tool_name == "WebSearch"        then del(.tool_input.query)
-        elif .tool_name == "ScheduleWakeup"   then del(.tool_input.reason, .tool_input.prompt)
+        if   .tool_name == "Write"                        then del(.tool_input.content)
+        elif .tool_name == "Edit"                         then del(.tool_input.old_string, .tool_input.new_string)
+        elif .tool_name == "MultiEdit"                    then del(.tool_input.edits[]?.old_string, .tool_input.edits[]?.new_string)
+        elif .tool_name == "NotebookEdit"                 then del(.tool_input.new_source)
+        elif .tool_name == "Bash"                         then del(.tool_input.description)
+        elif .tool_name == "Monitor"                      then del(.tool_input.description)
+        elif .tool_name == "Agent"                        then del(.tool_input.prompt, .tool_input.description)
+        elif .tool_name == "SubagentHandback"             then del(.tool_input.message)
+        elif .tool_name == "SendMessage"                  then del(.tool_input.message, .tool_input.summary)
+        elif .tool_name == "AskUserQuestion"              then del(.tool_input.questions)
+        elif .tool_name == "WebFetch"                     then del(.tool_input.prompt)
+        elif .tool_name == "WebSearch"                    then del(.tool_input.query)
+        elif .tool_name == "ScheduleWakeup"               then del(.tool_input.reason, .tool_input.prompt)
+        elif .tool_name == "ExitPlanMode"                 then del(.tool_input.plan)
+        elif .tool_name == "mcp__ccd_turn__update_plan"   then del(.tool_input.items)
+        elif .tool_name == "mcp__ccd_turn__wrap_up"       then del(.tool_input.recap, .tool_input.ask, .tool_input.actions)
+        elif .tool_name == "mcp__ccd_session__spawn_task" then del(.tool_input.prompt, .tool_input.tldr, .tool_input.title)
         else . end
         | .. | strings
       ' 2>/dev/null \
