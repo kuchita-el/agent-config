@@ -29,7 +29,7 @@ input=$(cat)
 # 書き込み（ドキュメント・設定例）を誤ってブロックしないため。書き込み先の
 # パス項目は除かないので、dotenv 自体への書き込みは引き続きブロックされる。
 # 同じ理由で、ファイル操作に使われない文章の項目（コマンドの説明文、サブエージェント
-# や別セッションへの依頼文と報告文、ユーザーへの問いと報告、作業計画、検索語等）も
+# や別セッションへの依頼文と報告文、ユーザーへの問いと報告・通知、作業計画と章立て、検索語等）も
 # 検査から除く。ファイル名に触れるだけの文章でのブロックが、誤検知の大半を占めていた
 # ため。実際の読み書きは、依頼を受けた側自身のツール呼び出しで検査される。
 # ExitPlanMode の計画ファイルのパス（planFilePath）は文章ではないので除かない。
@@ -54,6 +54,11 @@ matched=$(printf '%s' "$input" \
         elif .tool_name == "mcp__ccd_turn__update_plan"   then del(.tool_input.items)
         elif .tool_name == "mcp__ccd_turn__wrap_up"       then del(.tool_input.recap, .tool_input.ask, .tool_input.actions)
         elif .tool_name == "mcp__ccd_session__spawn_task" then del(.tool_input.prompt, .tool_input.tldr, .tool_input.title)
+        elif .tool_name == "TodoWrite"                    then del(.tool_input.todos)
+        elif .tool_name == "TaskCreate"                   then del(.tool_input.subject, .tool_input.description, .tool_input.activeForm)
+        elif .tool_name == "TaskUpdate"                   then del(.tool_input.subject, .tool_input.description, .tool_input.activeForm)
+        elif .tool_name == "mcp__ccd_session__mark_chapter" then del(.tool_input.title, .tool_input.summary)
+        elif .tool_name == "PushNotification"             then del(.tool_input.message)
         else . end
         | .. | strings
       ' 2>/dev/null \
@@ -95,7 +100,7 @@ if [[ -n "$matched" ]]; then
 block-dotenv: dotenv ファイルを指す引数があるため止めた（検出: ${names}）。
 - 中身や値が要る場合は、会話ログ・履歴・別のファイル等の代わりの経路から拾わず、ユーザーに尋ねる。
 - サンドボックス内の git status に出る未追跡の .env やドットファイル群、変更扱いの .env.example 等は、サンドボックスが拒否するパスに置く空ファイル等による見かけ上の変化で、作業による変更ではない。調べる必要はない。
-- 存在や差分を確かめるだけの目的なら、該当の名前を外して実行し直す。
+- 存在や差分を確かめるだけの目的なら、該当のパスを対象から外して実行し直す（ワイルドカード等で含め直さない）。
 EOF
     exit 2
 fi

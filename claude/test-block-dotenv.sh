@@ -80,6 +80,11 @@ check 0 "ExitPlanMode plan のみ" ExitPlanMode "$(ti --arg p "1. add $DOT to de
 check 0 "update_plan items のみ" mcp__ccd_turn__update_plan "$(ti --arg c "check $DOT.example" '{items: [{content: $c, status: "in_progress"}], scope: "first_task"}')"
 check 0 "wrap_up recap・ask・actions のみ" mcp__ccd_turn__wrap_up "$(ti --arg r "$DOT stays denied" '{recap: $r, ask: $r, actions: [{label: $r}]}')"
 check 0 "spawn_task prompt・tldr・title のみ" mcp__ccd_session__spawn_task "$(ti --arg p "stop reading $DOT" '{prompt: $p, tldr: $p, title: $p}')"
+check 0 "TodoWrite todos のみ" TodoWrite "$(ti --arg c "check $DOT.example" '{todos: [{content: $c, status: "pending", activeForm: $c}]}')"
+check 0 "TaskCreate subject・description・activeForm のみ" TaskCreate "$(ti --arg s "inspect $DOT" '{subject: $s, description: $s, activeForm: $s}')"
+check 0 "TaskUpdate subject・description・activeForm のみ" TaskUpdate "$(ti --arg s "inspect $DOT" '{taskId: "1", status: "in_progress", subject: $s, description: $s, activeForm: $s}')"
+check 0 "mark_chapter title・summary のみ" mcp__ccd_session__mark_chapter "$(ti --arg s "$DOT block review" '{title: $s, summary: $s}')"
+check 0 "PushNotification message のみ" PushNotification "$(ti --arg m "blocked: $DOT.example diff" '{message: $m, status: "proactive"}')"
 
 # 文章の項目を除くのは項目単位。同じツールの他の項目は引き続き検査する
 check 2 "Bash command は description と併存しても検査" Bash "$(ti --arg c "cat $DOT" '{command: $c, description: "show file"}')"
@@ -93,7 +98,7 @@ check 2 "spawn_task cwd" mcp__ccd_session__spawn_task "$(ti --arg c "/work/$DOT"
 # 名前だけで照合すると、抜き出しが空でも通ってしまう。
 msg=$(printf '%s' "$(jq -cn --arg c "git diff $DOT.example $DOT" '{session_id: "test", tool_name: "Bash", tool_input: {command: $c}}')" \
     | bash "$HOOK" 2>&1 >/dev/null || true)
-for want in "（検出: $DOT $DOT.example）" "ユーザーに尋ねる" "サンドボックス"; do
+for want in "（検出: $DOT $DOT.example）" "ユーザーに尋ねる" "サンドボックス" "ワイルドカード等で含め直さない"; do
     if [[ "$msg" == *"$want"* ]]; then
         printf 'ok   ブロック時の文言に「%s」を含む\n' "$want"
     else
@@ -107,7 +112,7 @@ check 2 "AC6 MCP path 引数" mcp__fs__read "$(ti --arg p "/work/$DOT" '{path: $
 check 2 "AC6 MCP content 引数 (本文除外はツール限定)" mcp__fs__write "$(ti --arg c "cat $DOT" '{target: "/work/a.md", content: $c}')"
 check 2 "AC6 MCP 入れ子の引数" mcp__x__y "$(ti --arg p "$DOT" '{opts: {files: [$p]}}')"
 # 文章の項目として除いた項目名も、他のツールでは検査する。項目名だけの一律除外への退行を検出するため、項目ごとに確かめる
-for field in description prompt message summary questions query reason plan items recap ask actions tldr title; do
+for field in description prompt message summary questions query reason plan items recap ask actions tldr title todos subject activeForm; do
     check 2 "AC6 MCP $field 引数 (文章の項目の除外はツール限定)" mcp__x__y "$(ti --arg f "$field" --arg v "cat $DOT" '{($f): $v}')"
 done
 
