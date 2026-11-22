@@ -64,6 +64,7 @@ Claude Code本体がsettings.jsonを更新する際、JSONを内部構造体経�
 ```bash
 bash claude/test-install.sh
 bash claude/test-block-dotenv.sh
+bash claude/test-log-confusion.sh
 bash codex/test-install.sh
 ```
 
