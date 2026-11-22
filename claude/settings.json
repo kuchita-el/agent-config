@@ -136,17 +136,6 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash $HOME/.claude/hooks/check-internal-symbols.sh"
-          }
-        ]
-      }
     ]
   },
   "statusLine": {
